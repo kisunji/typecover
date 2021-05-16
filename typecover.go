@@ -31,7 +31,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					matches := commentRegex.FindAllStringSubmatch(comment.Text, 1)
 					if len(matches) == 1 && len(matches[0]) == 2 {
 						typeName := fullTypeName(pass, file, n, strings.TrimSpace(matches[0][1]))
-						checkMembers(pass, n, typeName)
+						checkFields(pass, n, typeName)
 					}
 				}
 			}
@@ -41,7 +41,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	return nil, nil
 }
 
-func checkMembers(pass *analysis.Pass, n ast.Node, typeName string) {
+func checkFields(pass *analysis.Pass, n ast.Node, typeName string) {
 	var typeNameFound bool
 	ast.Inspect(n, func(n ast.Node) bool {
 		compositeLit, ok := n.(*ast.CompositeLit)
