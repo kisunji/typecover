@@ -57,30 +57,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	return nil, nil
 }
 
-func findType(pass *analysis.Pass, targetType string) types.Type {
-	ss := strings.Split(targetType, ".")
-	pkgName := ss[0]
-	typeName := ss[1]
-	if pass.Pkg.Path() == pkgName {
-		o := pass.Pkg.Scope().Lookup(typeName)
-		if o != nil {
-			return o.Type()
-		}
-	}
-
-	for _, imp := range pass.Pkg.Imports() {
-		if imp.Path() == pkgName {
-			o := imp.Scope().Lookup(typeName)
-			if o != nil {
-				return o.Type()
-			}
-		}
-	}
-	return nil
-}
-
 func checkMembers(pass *analysis.Pass, n ast.Node, target types.Type, exclude []string) []string {
-	var missing []string
 	membersFound := map[string]bool{}
 
 	switch u := target.Underlying().(type) {
@@ -164,13 +141,35 @@ func checkMembers(pass *analysis.Pass, n ast.Node, target types.Type, exclude []
 		}
 	}
 
+	var missing []string
 	for member, found := range membersFound {
 		if !found {
 			missing = append(missing, member)
 		}
 	}
-
 	return missing
+}
+
+func findType(pass *analysis.Pass, targetType string) types.Type {
+	ss := strings.Split(targetType, ".")
+	pkgName := ss[0]
+	typeName := ss[1]
+	if pass.Pkg.Path() == pkgName {
+		o := pass.Pkg.Scope().Lookup(typeName)
+		if o != nil {
+			return o.Type()
+		}
+	}
+
+	for _, imp := range pass.Pkg.Imports() {
+		if imp.Path() == pkgName {
+			o := imp.Scope().Lookup(typeName)
+			if o != nil {
+				return o.Type()
+			}
+		}
+	}
+	return nil
 }
 
 func fullTypeName(pass *analysis.Pass, file *ast.File, n ast.Node, typeName string) string {
