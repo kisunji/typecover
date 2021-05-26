@@ -110,4 +110,15 @@ func testStructs() {
 		},
 		MyField4: "hello",
 	}
+
+	//typecover:MyStruct
+	_ = &MyStruct{
+		MyField1: "hello",
+		MyField2: "world",
+	}
+
+	//typecover:MyStruct
+	_ = &MyStruct{ // want `Type structs.MyStruct is missing MyField1`
+		MyField2: "world",
+	}
 }

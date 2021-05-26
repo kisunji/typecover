@@ -34,7 +34,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 						typeName := fullTypeName(pass, file, n, strings.TrimSpace(matches[0][1]))
 						t := findType(pass, typeName)
 						if t == nil {
-							reportNodef(pass, n, "Type %s not found in associated code block", typeName)
+							reportNodef(pass, n, "Type %s not found in project scope", typeName)
 							return false
 						}
 						missing := checkMembers(pass, n, t)
@@ -54,7 +54,7 @@ func findType(pass *analysis.Pass, targetType string) types.Type {
 	ss := strings.Split(targetType, ".")
 	pkgName := ss[0]
 	typeName := ss[1]
-	if pass.Pkg.Name() == pkgName {
+	if pass.Pkg.Path() == pkgName {
 		o := pass.Pkg.Scope().Lookup(typeName)
 		if o != nil {
 			return o.Type()
