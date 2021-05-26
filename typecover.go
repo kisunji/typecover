@@ -12,7 +12,7 @@ import (
 	"golang.org/x/tools/go/analysis/passes/inspect"
 )
 
-const Doc = `typecover checks that a code block is assigning to all exported fields of a struct.`
+const Doc = `typecover checks that a code block is assigning to all exported fields of a struct or calling all exported methods of an interface.`
 
 var Analyzer = &analysis.Analyzer{
 	Doc:      Doc,
