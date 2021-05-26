@@ -3,8 +3,8 @@ package typecover_test
 import (
 	"testing"
 
+	"github.com/kisunji/typecover"
 	"golang.org/x/tools/go/analysis/analysistest"
-	"typecover"
 )
 
 func TestStructs(t *testing.T) {

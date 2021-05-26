@@ -1,4 +1,4 @@
-module typecover
+module github.com/kisunji/typecover
 
 go 1.16
 
