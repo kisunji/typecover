@@ -29,15 +29,22 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		ast.Inspect(file, func(n ast.Node) bool {
 			for _, comments := range commentMap[n] {
 				for _, comment := range comments.List {
+					var exclude []string
 					matches := commentRegex.FindAllStringSubmatch(comment.Text, 1)
 					if len(matches) == 1 && len(matches[0]) == 2 {
+						// Check if there are any member to exclude
+						ss := strings.Split(comment.Text, "~")
+						if len(ss) > 1 {
+							exclude = strings.Split(ss[1], ",")
+						}
+
 						typeName := fullTypeName(pass, file, n, strings.TrimSpace(matches[0][1]))
 						t := findType(pass, typeName)
 						if t == nil {
 							reportNodef(pass, n, "Type %s not found in project scope", typeName)
 							return false
 						}
-						missing := checkMembers(pass, n, t)
+						missing := checkMembers(pass, n, t, exclude)
 						if len(missing) > 0 {
 							reportNodef(pass, n, "Type %s is missing %s", typeName, strings.Join(missing, ", "))
 						}
@@ -72,7 +79,7 @@ func findType(pass *analysis.Pass, targetType string) types.Type {
 	return nil
 }
 
-func checkMembers(pass *analysis.Pass, n ast.Node, target types.Type) []string {
+func checkMembers(pass *analysis.Pass, n ast.Node, target types.Type, exclude []string) []string {
 	var missing []string
 	membersFound := map[string]bool{}
 
@@ -150,6 +157,13 @@ func checkMembers(pass *analysis.Pass, n ast.Node, target types.Type) []string {
 		})
 	}
 
+	// Mark all excluded members as found.
+	for _, e := range exclude {
+		if _, ok := membersFound[e]; ok {
+			membersFound[e] = true
+		}
+	}
+
 	for member, found := range membersFound {
 		if !found {
 			missing = append(missing, member)
@@ -166,7 +180,6 @@ func fullTypeName(pass *analysis.Pass, file *ast.File, n ast.Node, typeName stri
 			var pkgName string
 			if fimport.Name != nil {
 				if fimport.Name.Name == "." {
-					// TODO: handle dot imports
 					reportNodef(pass, n, "Dot imports are unhandled!")
 				}
 				pkgName = fimport.Name.Name

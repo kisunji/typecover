@@ -11,8 +11,17 @@ go get -u github.com/kisunji/typecover/cmd/typecover
 ```
 
 ## Usage
+
+Using the CLI
 ```
 typecover [package/file]
+```
+
+Comment directives
+```go
+// typecover:TypeName
+
+// typecover:pkg.TypeName ~Fields,To,Exclude
 ```
 
 ## Examples
