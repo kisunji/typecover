@@ -116,7 +116,7 @@ func checkMembers(pass *analysis.Pass, n ast.Node, target types.Type) []string {
 			switch nodeType := n.(type) {
 			case *ast.CompositeLit: // nodeType = MyType{Field: 1}
 				t := pass.TypesInfo.TypeOf(nodeType.Type)
-				if t == nil || t.String() != target.String() {
+				if t == nil || strings.TrimPrefix(t.String(), "*")  != target.String() {
 					return true
 				}
 
@@ -134,8 +134,8 @@ func checkMembers(pass *analysis.Pass, n ast.Node, target types.Type) []string {
 			case *ast.AssignStmt: // nodeType.Field = val
 				for _, s := range nodeType.Lhs {
 					if se, ok := s.(*ast.SelectorExpr); ok {
-						t1 := pass.TypesInfo.TypeOf(se.X)
-						if t1 == nil || t1.String() != target.String() {
+						t := pass.TypesInfo.TypeOf(se.X)
+						if t == nil || strings.TrimPrefix(t.String(), "*") != target.String() {
 							return true
 						}
 						if se.Sel != nil {

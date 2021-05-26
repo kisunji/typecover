@@ -20,6 +20,15 @@ type MyEmbeddedStruct struct {
 }
 
 // typecover:MyStruct
+func testBlockPass() {
+	m := MyStruct{}
+	m.MyField1 = "hello"
+	if true {
+		m.MyField2 = "world"
+	}
+}
+
+// typecover:MyStruct
 func testBlockFail() { // want `Type structs.MyStruct is missing MyField1`
 	m := MyStruct{}
 	if true {
@@ -28,12 +37,18 @@ func testBlockFail() { // want `Type structs.MyStruct is missing MyField1`
 }
 
 // typecover:MyStruct
-func testBlockPass() {
-	m := MyStruct{}
+func testBlockPointerPass() {
+	m := &MyStruct{}
 	m.MyField1 = "hello"
-	if true {
-		m.MyField2 = "world"
-	}
+	m.MyField2 = "world"
+	return
+}
+
+// typecover:MyStruct
+func testBlockPointerFail() { // want `Type structs.MyStruct is missing MyField2`
+	m := &MyStruct{}
+	m.MyField1 = "hello"
+	return
 }
 
 // typecover:MyStruct
@@ -44,7 +59,7 @@ func testBlockAndCompositeLiteral() {
 	m.MyField2 = "world"
 }
 
-//typecover:MyStruct
+// typecover:MyStruct
 func testBlockTwoStructsSameFieldNames() { // want `Type structs.MyStruct is missing MyField1`
 	m := MyStruct{}
 	if true {
@@ -69,7 +84,7 @@ func testStructs() {
 	// TEST: nonvalid struct
 
 	// typecover:MyStruct2
-	_ = MyStruct{ // want `Type structs.MyStruct2 not found in associated code block`
+	_ = MyStruct{ // want `Type structs.MyStruct2 not found in project scope`
 		MyField1: "hello",
 		MyField2: "world",
 	}
@@ -111,13 +126,13 @@ func testStructs() {
 		MyField4: "hello",
 	}
 
-	//typecover:MyStruct
+	// typecover:MyStruct
 	_ = &MyStruct{
 		MyField1: "hello",
 		MyField2: "world",
 	}
 
-	//typecover:MyStruct
+	// typecover:MyStruct
 	_ = &MyStruct{ // want `Type structs.MyStruct is missing MyField1`
 		MyField2: "world",
 	}
