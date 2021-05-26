@@ -1,6 +1,9 @@
 # typecover
 
-`typecover` is a go linter that checks if a struct is assigned all the exported fields of its type.
+`typecover` is a go linter that checks if a code block is assigning to all exported fields of a struct or 
+calling all exported methods of an interface.
+
+It is useful in cases where code wants to be aware of any newly added members.
 
 ## Install
 ```
@@ -13,7 +16,9 @@ typecover [package/file]
 ```
 
 ## Examples
-`typecover` will check that all exported fields are assigned
+`typecover:YourType` will check for the existence of all exported members of `YourType` in the comment's associated code
+block.
+
 ```go
 type MyStruct struct {
 	MyField1 string
@@ -31,6 +36,18 @@ m := MyStruct{
 Type example.MyStruct is missing MyField2
 ```
 
+The `typecover` annotation can be placed at a higher level to cover the whole block.
+```go
+// typecover:MyStruct
+func example() {
+    m := MyStruct{}
+    m.MyField2 = "world"    
+}
+```
+
+```
+Type example.MyStruct is missing MyField1
+```
 
 `typecover` works with imported structs as well
 ```go
