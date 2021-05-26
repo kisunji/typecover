@@ -8,10 +8,50 @@ type MyStruct struct {
 	myField3 string
 }
 
+type AnotherStruct struct {
+	MyField1 string
+	MyField2 string
+}
+
 type MyEmbeddedStruct struct {
 	MyStruct
 
 	MyField4 string
+}
+
+// typecover:MyStruct
+func testBlockFail() { // want `Type structs.MyStruct is missing MyField1`
+	m := MyStruct{}
+	if true {
+		m.MyField2 = "world"
+	}
+}
+
+// typecover:MyStruct
+func testBlockPass() {
+	m := MyStruct{}
+	m.MyField1 = "hello"
+	if true {
+		m.MyField2 = "world"
+	}
+}
+
+// typecover:MyStruct
+func testBlockAndCompositeLiteral() {
+	m := MyStruct{
+		MyField1: "hello",
+	}
+	m.MyField2 = "world"
+}
+
+//typecover:MyStruct
+func testBlockTwoStructsSameFieldNames() { // want `Type structs.MyStruct is missing MyField1`
+	m := MyStruct{}
+	if true {
+		m.MyField2 = "world"
+	}
+	n := AnotherStruct{}
+	n.MyField1 = "error"
 }
 
 func testStructs() {
@@ -51,28 +91,23 @@ func testStructs() {
 		Value: nil,
 	}
 
-	// TEST: anonymous structs
-
-	// typecover:MyStruct
-	_ = MyStruct{"hello", "world", "!"} // this should pass
-
 	// TEST: embedded fields
 	// typecover:MyEmbeddedStruct
 	_ = MyEmbeddedStruct{
-		MyStruct{
+		MyStruct: MyStruct{
 			MyField1: "",
 			MyField2: "",
 			myField3: "",
 		},
-		"hello",
+		MyField4: "hello",
 	}
 
 	// typecover:MyEmbeddedStruct
 	_ = MyEmbeddedStruct{
 		// typecover:MyStruct
-		MyStruct{ // want `Type structs.MyStruct is missing MyField2`
+		MyStruct: MyStruct{ // want `Type structs.MyStruct is missing MyField2`
 			MyField1: "",
 		},
-		"hello",
+		MyField4: "hello",
 	}
 }

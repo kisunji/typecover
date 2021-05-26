@@ -20,6 +20,7 @@ var Analyzer = &analysis.Analyzer{
 	Run:      run,
 	Requires: []*analysis.Analyzer{inspect.Analyzer},
 }
+
 var commentRegex = regexp.MustCompile(`typecover:([\w.]+)`)
 
 func run(pass *analysis.Pass) (interface{}, error) {
@@ -31,7 +32,15 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					matches := commentRegex.FindAllStringSubmatch(comment.Text, 1)
 					if len(matches) == 1 && len(matches[0]) == 2 {
 						typeName := fullTypeName(pass, file, n, strings.TrimSpace(matches[0][1]))
-						checkFields(pass, n, typeName)
+						t := findType(pass, typeName)
+						if t == nil {
+							reportNodef(pass, n, "Type %s not found in associated code block", typeName)
+							return false
+						}
+						missing := checkMembers(pass, n, t)
+						if len(missing) > 0 {
+							reportNodef(pass, n, "Type %s is missing %s", typeName, strings.Join(missing, ", "))
+						}
 					}
 				}
 			}
@@ -41,65 +50,113 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	return nil, nil
 }
 
-func checkFields(pass *analysis.Pass, n ast.Node, typeName string) {
-	var typeNameFound bool
-	ast.Inspect(n, func(n ast.Node) bool {
-		compositeLit, ok := n.(*ast.CompositeLit)
-		if !ok {
-			return true
+func findType(pass *analysis.Pass, targetType string) types.Type {
+	ss := strings.Split(targetType, ".")
+	pkgName := ss[0]
+	typeName := ss[1]
+	if pass.Pkg.Name() == pkgName {
+		o := pass.Pkg.Scope().Lookup(typeName)
+		if o != nil {
+			return o.Type()
 		}
+	}
 
-		t := pass.TypesInfo.TypeOf(compositeLit.Type)
-		if t == nil {
-			return true
-		}
-
-		if t.String() == typeName {
-			typeNameFound = true
-			missing := []string{}
-			str, ok := t.Underlying().(*types.Struct)
-			if !ok {
-				return true
+	for _, imp := range pass.Pkg.Imports() {
+		if imp.Path() == pkgName {
+			o := imp.Scope().Lookup(typeName)
+			if o != nil {
+				return o.Type()
 			}
+		}
+	}
+	return nil
+}
 
-			for i := 0; i < str.NumFields(); i++ {
-				fieldName := str.Field(i).Name()
-				exists := false
+func checkMembers(pass *analysis.Pass, n ast.Node, target types.Type) []string {
+	var missing []string
+	membersFound := map[string]bool{}
 
-				if !str.Field(i).Exported() {
-					continue
+	switch u := target.Underlying().(type) {
+	case *types.Interface:
+		for i := 0; i < u.NumMethods(); i++ {
+			if u.Method(i).Exported() {
+				membersFound[u.Method(i).Name()] = false
+			}
+		}
+
+		ast.Inspect(n, func(n ast.Node) bool {
+			if se, ok := n.(*ast.SelectorExpr); ok {
+				t1 := pass.TypesInfo.TypeOf(se.X)
+				if t1 == nil {
+					return true
 				}
 
-				for j, e := range compositeLit.Elts {
+				// either the type itself or the pointer of type should implement interface u
+				if !types.Implements(t1, u) && !types.Implements(types.NewPointer(t1), u) {
+					return true
+				}
+
+				if se.Sel != nil {
+					if _, ok := membersFound[se.Sel.Name]; ok {
+						membersFound[se.Sel.Name] = true
+					}
+				}
+			}
+			return true
+		})
+
+	case *types.Struct:
+		for i := 0; i < u.NumFields(); i++ {
+			if u.Field(i).Exported() {
+				membersFound[u.Field(i).Name()] = false
+			}
+		}
+
+		ast.Inspect(n, func(n ast.Node) bool {
+			switch nodeType := n.(type) {
+			case *ast.CompositeLit: // nodeType = MyType{Field: 1}
+				t := pass.TypesInfo.TypeOf(nodeType.Type)
+				if t == nil || t.String() != target.String() {
+					return true
+				}
+
+				for _, e := range nodeType.Elts {
 					if k, ok := e.(*ast.KeyValueExpr); ok {
-						if i, ok := k.Key.(*ast.Ident); ok {
-							if i.Name == fieldName {
-								exists = true
-								break
+						if i, ok2 := k.Key.(*ast.Ident); ok2 {
+							if _, ok3 := membersFound[i.Name]; ok3 {
+								membersFound[i.Name] = true
 							}
 						}
 					} else {
-						// Anonymous fields (e.g. Foo{1, true, "hello"})
-						if j == i {
-							exists = true
-							break
+						// todo: support CompositeLit with anonymous fields
+					}
+				}
+			case *ast.AssignStmt: // nodeType.Field = val
+				for _, s := range nodeType.Lhs {
+					if se, ok := s.(*ast.SelectorExpr); ok {
+						t1 := pass.TypesInfo.TypeOf(se.X)
+						if t1 == nil || t1.String() != target.String() {
+							return true
+						}
+						if se.Sel != nil {
+							if _, ok := membersFound[se.Sel.Name]; ok {
+								membersFound[se.Sel.Name] = true
+							}
 						}
 					}
 				}
-				if !exists {
-					missing = append(missing, fieldName)
-				}
 			}
-			if len(missing) > 0 {
-				reportNodef(pass, n, "Type %s is missing %s", t.String(), strings.Join(missing, ", "))
-			}
-			return false // stop walking since we processed struct
-		}
-		return true
-	})
-	if !typeNameFound {
-		reportNodef(pass, n, "Type %s not found in associated code block", typeName)
+			return true
+		})
 	}
+
+	for member, found := range membersFound {
+		if !found {
+			missing = append(missing, member)
+		}
+	}
+
+	return missing
 }
 
 func fullTypeName(pass *analysis.Pass, file *ast.File, n ast.Node, typeName string) string {

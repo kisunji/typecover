@@ -10,3 +10,7 @@ import (
 func TestStructs(t *testing.T) {
 	analysistest.Run(t, analysistest.TestData(), typecover.Analyzer, "structs")
 }
+
+func TestInterfaces(t *testing.T) {
+	analysistest.Run(t, analysistest.TestData(), typecover.Analyzer, "interfaces")
+}
