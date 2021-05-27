@@ -18,16 +18,22 @@ typecover [package/file]
 ```
 
 Comment directives
-```go
+```
+# Local Type
 // typecover:TypeName
 
-// typecover:pkg.TypeName ~Fields,To,Exclude
+# Imported Type
+// typecover:pkg.TypeName 
+
+# Excluding members
+// typecover:TypeName -exclude Field3,Field4,Field5
 ```
+`typecover:YourType` will check for the existence of all exported members of `YourType` in the comment's associated code
+block (for details on how comments are associated with code, see [here](https://golang.org/pkg/go/ast/#NewCommentMap)).
 
 ## Examples
-`typecover:YourType` will check for the existence of all exported members of `YourType` in the comment's associated code
-block.
 
+### Struct assignment
 ```go
 type MyStruct struct {
 	MyField1 string
@@ -40,12 +46,12 @@ m := MyStruct{
     MyField1: "hello",
 }
 ```
-
 ```
 Type example.MyStruct is missing MyField2
 ```
 
-The `typecover` annotation can be placed at a higher level to cover the whole block.
+### Covering a code block
+The `typecover` annotation can be placed at a higher level (func, if-stmt, for-loop) to cover the whole block.
 ```go
 // typecover:MyStruct
 func example() {
@@ -53,12 +59,11 @@ func example() {
     m.MyField2 = "world"    
 }
 ```
-
 ```
 Type example.MyStruct is missing MyField1
 ```
 
-`typecover` works with imported structs as well
+### Using imported types
 ```go
 // typecover:flag.Flag
 f := flag.Flag{ 
@@ -67,9 +72,19 @@ f := flag.Flag{
     Value: nil,
 }
 ```
-
 ```
 Type flag.Flag is missing DefValue
+```
+
+### Copying fields from exported type
+```go
+//typecover:flag.Flag
+func cloneFlag
+f := MyFlag{
+	Name: f.Name,
+	Usage: f.Usage,
+	Value: f.Value,	
+}
 ```
 
 ## Credits

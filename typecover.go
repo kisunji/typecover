@@ -33,9 +33,9 @@ func run(pass *analysis.Pass) (interface{}, error) {
 					matches := commentRegex.FindAllStringSubmatch(comment.Text, 1)
 					if len(matches) == 1 && len(matches[0]) == 2 {
 						// Check if there are any member to exclude
-						ss := strings.Split(comment.Text, "~")
+						ss := strings.Split(comment.Text, "-exclude")
 						if len(ss) > 1 {
-							exclude = strings.Split(ss[1], ",")
+							exclude = strings.Split(strings.TrimLeft(ss[1], "= "), ",")
 						}
 						if len(ss) > 2 {
 							reportNodef(pass, n, "Detected more than one '~'. Separate arguments with commas")

@@ -1,6 +1,6 @@
 package structs
 
-// typecover:MyStruct ~MyField1
+// typecover:MyStruct -exclude MyField1
 func testBlockWithExcludesPass() {
 	m := MyStruct{}
 	if true {
@@ -8,7 +8,7 @@ func testBlockWithExcludesPass() {
 	}
 }
 
-// typecover:MyStruct ~MyField1
+// typecover:MyStruct -exclude=MyField1
 func testBlockWithExcludesFail() { // want `Type structs.MyStruct is missing MyField2`
 	m := MyStruct{}
 	m.myField3 = "bye"

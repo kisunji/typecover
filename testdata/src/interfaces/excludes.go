@@ -1,12 +1,11 @@
 package interfaces
 
-// typecover:MyInterface ~MyFunc1
+// typecover:MyInterface -exclude MyFunc1,MyFunc2
 func sequentialMethodCallsWithExcludes() {
-	m := &myStruct{}
-	m.MyFunc2()
+	_ = &myStruct{}
 }
 
-// typecover:MyInterface ~MyFunc1
+// typecover:MyInterface -exclude=MyFunc1
 func sequentialMethodCallsWithExcludesFails() { // want `Type interfaces.MyInterface is missing MyFunc2`
 	_ = &myStruct{}
 }
