@@ -135,7 +135,7 @@ func checkMembers(pass *analysis.Pass, n ast.Node, target types.Type, exclude []
 
 	// Mark all excluded members as found.
 	for _, e := range exclude {
-		if _, ok := membersFound[e]; ok {
+		if _, ok := membersFound[strings.TrimSpace(e)]; ok {
 			membersFound[e] = true
 		}
 	}
