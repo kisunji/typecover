@@ -37,6 +37,9 @@ func run(pass *analysis.Pass) (interface{}, error) {
 						if len(ss) > 1 {
 							exclude = strings.Split(ss[1], ",")
 						}
+						if len(ss) > 2 {
+							reportNodef(pass, n, "Detected more than one '~'. Separate arguments with commas")
+						}
 
 						typeName := fullTypeName(pass, file, n, strings.TrimSpace(matches[0][1]))
 						t := findType(pass, typeName)
@@ -97,14 +100,14 @@ func checkMembers(pass *analysis.Pass, n ast.Node, target types.Type, exclude []
 		}
 
 		ast.Inspect(n, func(n ast.Node) bool {
-			switch nodeType := n.(type) {
-			case *ast.CompositeLit: // nodeType = MyType{Field: 1}
-				t := pass.TypesInfo.TypeOf(nodeType.Type)
-				if t == nil || strings.TrimPrefix(t.String(), "*")  != target.String() {
+			switch nt := n.(type) {
+			case *ast.CompositeLit: // nt = MyType{Field: 1}
+				t := pass.TypesInfo.TypeOf(nt.Type)
+				if t == nil || strings.TrimPrefix(t.String(), "*") != target.String() {
 					return true
 				}
 
-				for _, e := range nodeType.Elts {
+				for _, e := range nt.Elts {
 					if k, ok := e.(*ast.KeyValueExpr); ok {
 						if i, ok2 := k.Key.(*ast.Ident); ok2 {
 							if _, ok3 := membersFound[i.Name]; ok3 {
@@ -115,18 +118,14 @@ func checkMembers(pass *analysis.Pass, n ast.Node, target types.Type, exclude []
 						// todo: support CompositeLit with anonymous fields
 					}
 				}
-			case *ast.AssignStmt: // nodeType.Field = val
-				for _, s := range nodeType.Lhs {
-					if se, ok := s.(*ast.SelectorExpr); ok {
-						t := pass.TypesInfo.TypeOf(se.X)
-						if t == nil || strings.TrimPrefix(t.String(), "*") != target.String() {
-							return true
-						}
-						if se.Sel != nil {
-							if _, ok := membersFound[se.Sel.Name]; ok {
-								membersFound[se.Sel.Name] = true
-							}
-						}
+			case *ast.SelectorExpr: // nt.Field = val
+				t := pass.TypesInfo.TypeOf(nt.X)
+				if t == nil || strings.TrimPrefix(t.String(), "*") != target.String() {
+					return true
+				}
+				if nt.Sel != nil {
+					if _, ok := membersFound[nt.Sel.Name]; ok {
+						membersFound[nt.Sel.Name] = true
 					}
 				}
 			}

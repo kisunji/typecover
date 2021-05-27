@@ -69,6 +69,44 @@ func testBlockTwoStructsSameFieldNames() { // want `Type structs.MyStruct is mis
 	n.MyField1 = "error"
 }
 
+func testAssigningFromAllFields() {
+	m := MyStruct{
+		MyField1: "hello",
+		MyField2: "world",
+	}
+	type local struct {
+		MyField1 string
+		MyField2 string
+	}
+	// typecover:MyStruct
+	_ = local{
+		MyField1: m.MyField1,
+		MyField2: m.MyField2,
+	}
+
+	// typecover:MyStruct
+	_ = local{ // want `Type structs.MyStruct is missing MyField2`
+		MyField1: m.MyField1,
+		MyField2: "world",
+	}
+
+	type localWPointers struct {
+		MyField1 *string
+		MyField2 *string
+	}
+	// typecover:MyStruct
+	_ = localWPointers{
+		MyField1: &m.MyField1,
+		MyField2: &m.MyField2,
+	}
+
+	// typecover:MyStruct
+	_ = localWPointers{ // want `Type structs.MyStruct is missing MyField2`
+		MyField1: &m.MyField1,
+		MyField2: nil,
+	}
+}
+
 func testStructs() {
 	// typecover:MyStruct
 	_ = MyStruct{

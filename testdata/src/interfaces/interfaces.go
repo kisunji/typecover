@@ -65,6 +65,26 @@ func builderMethodChainingMissingCall() { // want `Type interfaces.MyBuilder is 
 	_ = m.Option2().Build()
 }
 
+// typecover:MyBuilder
+func builderWorksInsideComposite() {
+	type local struct{
+		b MyBuilder
+	}
+	_= local{
+		b: NewMyBuilder().Option1().Option2().Build(),
+	}
+}
+
+// typecover:MyBuilder
+func builderWorksInsideCompositeMissingCall() { // want `Type interfaces.MyBuilder is missing Option2`
+	type local struct{
+		b MyBuilder
+	}
+	_= local{
+		b: NewMyBuilder().Option1().Build(),
+	}
+}
+
 // typecover:MyInterface
 // typecover:MyBuilder
 func multipleInterfacesCovered() {
