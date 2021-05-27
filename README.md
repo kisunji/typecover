@@ -79,12 +79,52 @@ Type flag.Flag is missing DefValue
 ### Copying fields from exported type
 ```go
 //typecover:flag.Flag
-func cloneFlag
-f := MyFlag{
-	Name: f.Name,
-	Usage: f.Usage,
-	Value: f.Value,	
+func cloneFlag(f flag.Flag) MyFlag {
+    return MyFlag{
+        Name: f.Name,
+        Usage: f.Usage,
+        Value: f.Value,
+    }
 }
+```
+```
+Type flag.Flag is missing DefValue
+```
+
+### Enforcing all methods in a Builder interface
+```go
+type ExampleBuilder interface {
+	Option1() ExampleBuilder
+	Option2() ExampleBuilder
+	Build() Example
+}
+
+//typecover:ExampleBuilder
+func MakeExample() Example {
+	b := NewExampleBuilder().Option2()
+	return b.Build()
+}
+```
+```
+Type example.ExampleBuilder is missing Option1
+```
+
+### Exclude a member from being checked
+```go
+type ExampleBuilder interface {
+	Option1() ExampleBuilder
+	Option2() ExampleBuilder
+	Build() Example
+}
+
+//typecover:ExampleBuilder -exclude Option1
+func MakeExample() Example {
+	b := NewExampleBuilder().Option2()
+	return b.Build()
+}
+```
+```
+(passes!)
 ```
 
 ## Credits
