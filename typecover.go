@@ -63,6 +63,18 @@ func run(pass *analysis.Pass) (interface{}, error) {
 func checkMembers(pass *analysis.Pass, n ast.Node, target types.Type, exclude []string) []string {
 	membersFound := map[string]bool{}
 
+	for _, t := range []types.Type{target, types.NewPointer(target)} {
+		mset := types.NewMethodSet(t)
+		for i := 0; i < mset.Len(); i++ {
+			switch u := mset.At(i).Obj().(type) {
+			case *types.Func:
+				if u.Exported() {
+					membersFound[u.Name()] = false
+				}
+			}
+		}
+	}
+
 	switch u := target.Underlying().(type) {
 	case *types.Interface:
 		for i := 0; i < u.NumMethods(); i++ {
