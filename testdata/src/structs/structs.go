@@ -19,6 +19,29 @@ type MyEmbeddedStruct struct {
 	MyField4 string
 }
 
+type MyStructWithMethods struct {
+	MyField string
+}
+
+func (m MyStructWithMethods) ValueMethod() int {
+	return 0
+}
+func (m *MyStructWithMethods) PointerMethod() int {
+	return 0
+}
+
+type MyEmbeddedStructWithMethods struct {
+	MyStructWithMethods
+}
+
+func (m MyEmbeddedStructWithMethods) ValueMethod2() int {
+	return 0
+}
+
+func (m *MyEmbeddedStructWithMethods) PointerMethod2() int {
+	return 0
+}
+
 // typecover:MyStruct
 func testBlockPass() {
 	m := MyStruct{}
@@ -173,5 +196,45 @@ func testStructs() {
 	// typecover:MyStruct
 	_ = &MyStruct{ // want `Type structs.MyStruct is missing MyField1`
 		MyField2: "world",
+	}
+
+	// typecover:MyStructWithMethods
+	{
+
+		m := &MyStructWithMethods{
+			MyField: "",
+		}
+		_ = m.ValueMethod()
+		_ = m.PointerMethod()
+	}
+
+	// typecover:MyStructWithMethods
+	_ = &MyStructWithMethods{ // want `Type structs.MyStructWithMethods is missing ValueMethod, PointerMethod`
+		MyField: "",
+	}
+
+	//typecover:MyEmbeddedStructWithMethods
+	{
+		m := &MyEmbeddedStructWithMethods{
+			MyStructWithMethods: MyStructWithMethods{
+				MyField: "",
+			},
+		}
+		_ = m.PointerMethod()
+		_ = m.PointerMethod2()
+		_ = m.ValueMethod()
+		_ = m.ValueMethod2()
+	}
+
+	//typecover:MyEmbeddedStructWithMethods
+	{ // want `Type structs.MyEmbeddedStructWithMethods is missing PointerMethod`
+		m := &MyEmbeddedStructWithMethods{
+			MyStructWithMethods: MyStructWithMethods{
+				MyField: "",
+			},
+		}
+		_ = m.PointerMethod2()
+		_ = m.ValueMethod()
+		_ = m.ValueMethod2()
 	}
 }

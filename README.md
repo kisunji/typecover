@@ -1,7 +1,7 @@
 # typecover
 
-`typecover` is a go linter that checks if a code block is assigning to all exported fields of a struct or 
-calling all exported methods of an interface.
+`typecover` is a go linter that checks if a code block is assigning to all exported fields
+and calling all exported methods of a struct, or calling all exported methods of an interface.
 
 It is useful in cases where code wants to be aware of any newly added members.
 
