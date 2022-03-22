@@ -162,10 +162,13 @@ func checkMembers(pass *analysis.Pass, n ast.Node, target types.Type, exclude []
 }
 
 func findType(pass *analysis.Pass, targetType string) types.Type {
-	ss := strings.Split(targetType, ".")
-	pkgName := ss[0]
-	typeName := ss[1]
-	if pass.Pkg.Path() == pkgName {
+	lastDot := strings.LastIndex(targetType, ".")
+	if lastDot == -1 {
+		panic(fmt.Sprintf("ill-formed targetType %q", targetType))
+	}
+	pkgName := targetType[:lastDot]
+	typeName := targetType[lastDot+1:]
+	if pkgMatch(pass.Pkg.Path(), pkgName) {
 		o := pass.Pkg.Scope().Lookup(typeName)
 		if o != nil {
 			return o.Type()
@@ -173,7 +176,7 @@ func findType(pass *analysis.Pass, targetType string) types.Type {
 	}
 
 	for _, imp := range pass.Pkg.Imports() {
-		if imp.Path() == pkgName {
+		if pkgMatch(imp.Path(), pkgName) {
 			o := imp.Scope().Lookup(typeName)
 			if o != nil {
 				return o.Type()
@@ -181,6 +184,13 @@ func findType(pass *analysis.Pass, targetType string) types.Type {
 		}
 	}
 	return nil
+}
+
+func pkgMatch(path, pkgName string) bool {
+	for strings.Contains(path, "/vendor/") {
+		path = strings.Split(path, "/vendor/")[1]
+	}
+	return path == pkgName
 }
 
 func fullTypeName(pass *analysis.Pass, file *ast.File, n ast.Node, typeName string) string {
